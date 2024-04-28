@@ -2,7 +2,7 @@
 
 class Globals
 {
-    public static readonly Font Ourfont = new Font("Arial", 14);
+    public static readonly Font Ourfont = new Font("Consolas", 16);
 
     public static readonly string QwertyKeyboardLayout = @"
 QWERTYUIOPÅ

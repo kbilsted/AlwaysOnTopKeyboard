@@ -34,9 +34,6 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(840, 230);
-            Name = "MainWindow";
-            Text = "Main Window";
             TopMost = true;
             ResumeLayout(false);
         }

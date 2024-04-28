@@ -16,14 +16,12 @@ public partial class MainWindow : Form
 
     private string keyboardLayout = Globals.RollerCoasterKeyboardLayout;
 
-    double opacityLayout = 0.4;
     Button cfgbutton;
 
     public MainWindow()
     {
         InitializeComponent();
 
-        Opacity = opacityLayout;
         BackColor = Color.Black;
         ForeColor = Color.YellowGreen;
 
@@ -33,21 +31,59 @@ public partial class MainWindow : Form
         // Remove the title bar and border
         FormBorderStyle = FormBorderStyle.None;
 
+        // Make the form always stay on top
+        TopMost = true;
+
+        Load += new EventHandler(OnLoad);
+        
+        FormClosing += new FormClosingEventHandler(OnClosing);
+
+
         // Enable mouse dragging the form around
         MouseDown += new MouseEventHandler(Form_MouseDown);
+
+    }
+
+
+    private void OnLoad(object? sender, EventArgs e)
+    {
+        // Load the window location and size
+        if (Properties.Settings.Default.WindowLocation != new Point(0, 0))
+        {
+            Location = Properties.Settings.Default.WindowLocation;
+        }
+
+        if (Properties.Settings.Default.WindowSize == new Size(0, 0))
+            Properties.Settings.Default.WindowSize = new Size(270, 860);
+        Size = Properties.Settings.Default.WindowSize;
+
+        if (Properties.Settings.Default.WindowOpacity == 0)
+            Properties.Settings.Default.WindowOpacity = 0.8;
+        Opacity = Properties.Settings.Default.WindowOpacity;
 
         // Make the form always stay on top
         TopMost = true;
     }
 
-    private void Form_MouseDown(object sender, MouseEventArgs e)
+    private void OnClosing(object? sender, FormClosingEventArgs e)
+    {
+        // Save the window location and size
+        Properties.Settings.Default.WindowLocation = Location;
+        Properties.Settings.Default.WindowSize = Size;
+        Properties.Settings.Default.WindowOpacity = Opacity;
+
+        Properties.Settings.Default.Save(); // Saves settings
+    }
+
+
+    private void Form_MouseDown(object? sender, MouseEventArgs e)
     {
         if (e.Button == MouseButtons.Left)
         {
             // Release the current mouse capture
             ReleaseCapture();
             // Send the WM_NCLBUTTONDOWN message to the window
-            SendMessage(this.Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
+            SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
         }
     }
 
@@ -108,16 +144,20 @@ public partial class MainWindow : Form
 
     private void configure_Click(object? sender, EventArgs e)
     {
-        using (ConfigureForm configForm = new ConfigureForm(keyboardLayout, opacityLayout))
+        using (ConfigureForm configForm = new ConfigureForm(keyboardLayout, Properties.Settings.Default.WindowOpacity))
         {
             if (configForm.ShowDialog() == DialogResult.OK)
             {
                 keyboardLayout = configForm.NewLayout; // Get the new layout
-                this.opacityLayout = configForm.NewOpacity; // Set the new opacity
-                this.Opacity = opacityLayout;
-                this.Controls.Clear(); // Clear existing controls
-                this.InitializeComponent(); // Reinitialize components
-                this.InitializeKeyboard(); // Rebuild the keyboard
+                Properties.Settings.Default.WindowOpacity = configForm.NewOpacity; // Set the new opacity
+                Opacity = Properties.Settings.Default.WindowOpacity;
+
+                OnClosing(null, null);
+
+
+                Controls.Clear(); // Clear existing controls
+                InitializeComponent(); // Reinitialize components
+                InitializeKeyboard(); // Rebuild the keyboard
             }
         }
     }

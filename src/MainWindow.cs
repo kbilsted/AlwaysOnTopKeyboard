@@ -1,5 +1,4 @@
 ﻿using System.Runtime.InteropServices;
-using System.Windows.Forms;
 
 namespace AlwaysOnTopKeyboard;
 
@@ -14,9 +13,9 @@ public partial class MainWindow : Form
     const int WM_NCLBUTTONDOWN = 0xA1;
     const int HT_CAPTION = 0x2;
 
-    private string keyboardLayout = Globals.RollerCoasterKeyboardLayout;
-
     Button cfgbutton;
+
+    AppSettings appSettings;
 
     public MainWindow()
     {
@@ -24,6 +23,8 @@ public partial class MainWindow : Form
 
         BackColor = Color.Black;
         ForeColor = Color.YellowGreen;
+
+        Load();
 
         InitializeKeyboard();
         SetDefaultFont(Controls, Globals.Ourfont);
@@ -34,47 +35,39 @@ public partial class MainWindow : Form
         // Make the form always stay on top
         TopMost = true;
 
-        Load += new EventHandler(OnLoad);
-        
-        FormClosing += new FormClosingEventHandler(OnClosing);
-
 
         // Enable mouse dragging the form around
         MouseDown += new MouseEventHandler(Form_MouseDown);
-
     }
 
 
-    private void OnLoad(object? sender, EventArgs e)
+    private void Load()
     {
-        // Load the window location and size
-        if (Properties.Settings.Default.WindowLocation != new Point(0, 0))
+        var settings = AppSettings.LoadSettings();
+
+        if (settings == null)
         {
-            Location = Properties.Settings.Default.WindowLocation;
+            settings = new AppSettings()
+            {
+                KeyboardLayout = Globals.QwertyKeyboardLayout,
+                KeyboardLayoutNextGen = Globals.RollerCoasterKeyboardLayout,
+                WindowOpacity = 0.8,
+                WindowLocation = new Point(0, 0),
+                WindowSize = new Size(640, 155),
+            };
+
+            AppSettings.SaveSettings(settings);
         }
 
-        if (Properties.Settings.Default.WindowSize == new Size(0, 0))
-            Properties.Settings.Default.WindowSize = new Size(270, 860);
-        Size = Properties.Settings.Default.WindowSize;
+        appSettings = settings;
 
-        if (Properties.Settings.Default.WindowOpacity == 0)
-            Properties.Settings.Default.WindowOpacity = 0.8;
-        Opacity = Properties.Settings.Default.WindowOpacity;
+        Location = appSettings.WindowLocation;
+        Size = appSettings.WindowSize;
+        Opacity = appSettings.WindowOpacity;
 
         // Make the form always stay on top
         TopMost = true;
     }
-
-    private void OnClosing(object? sender, FormClosingEventArgs e)
-    {
-        // Save the window location and size
-        Properties.Settings.Default.WindowLocation = Location;
-        Properties.Settings.Default.WindowSize = Size;
-        Properties.Settings.Default.WindowOpacity = Opacity;
-
-        Properties.Settings.Default.Save(); // Saves settings
-    }
-
 
     private void Form_MouseDown(object? sender, MouseEventArgs e)
     {
@@ -90,10 +83,9 @@ public partial class MainWindow : Form
     private void InitializeKeyboard()
     {
         int x = 10, y = 10; // Starting position of the first key
-        int keyWidth = 50, keyHeight = 50; // Width and height of keys
         int row = 0; // Row counter
 
-        foreach (char key in keyboardLayout
+        foreach (char key in appSettings.KeyboardLayout
             .SkipWhile(x => x == '\n' || x == '\r')
             .Where(c => c != '\r'))
         {
@@ -101,13 +93,13 @@ public partial class MainWindow : Form
             {
                 row++;
                 x = 10;
-                y = 10 + row * (keyHeight + 10); // Increment y position
+                y = 10 + row * (Globals.KeyboardKeyHeight + Globals.KeyboardKeyPad); // Increment y position
                 continue;
             }
 
             if (key == ' ')
             {
-                x += (keyWidth / 2) + (10 / 2);
+                x += (Globals.KeyboardKeyWidth / 2) + (Globals.KeyboardKeyPad / 2);
                 continue;
             }
 
@@ -115,7 +107,7 @@ public partial class MainWindow : Form
             {
                 Text = key.ToString(),
                 Location = new Point(x, y),
-                Size = new Size(keyWidth, keyHeight),
+                Size = new Size(Globals.KeyboardKeyWidth, Globals.KeyboardKeyHeight),
                 ForeColor = Color.YellowGreen,
                 FlatStyle = FlatStyle.Flat,
                 Enabled = false
@@ -125,7 +117,7 @@ public partial class MainWindow : Form
             button.Paint += new PaintEventHandler((sender, e) => Button_Paint(sender, e, Color.Green)); // Custom paint handler
             Controls.Add(button);
 
-            x += keyWidth + 10; // Increment x position for next key
+            x += Globals.KeyboardKeyWidth + 10; // Increment x position for next key
         }
 
         // cfg button
@@ -133,7 +125,7 @@ public partial class MainWindow : Form
         {
             Text = "?",
             Location = new Point(x, y),
-            Size = new Size(keyWidth, keyHeight),
+            Size = new Size(Globals.KeyboardKeyWidth, Globals.KeyboardKeyHeight),
             ForeColor = Color.Red,
             FlatStyle = FlatStyle.Flat,
         };
@@ -144,16 +136,14 @@ public partial class MainWindow : Form
 
     private void configure_Click(object? sender, EventArgs e)
     {
-        using (ConfigureForm configForm = new ConfigureForm(keyboardLayout, Properties.Settings.Default.WindowOpacity))
+        using (ConfigureForm configForm = new ConfigureForm(appSettings.KeyboardLayout, appSettings.WindowOpacity))
         {
             if (configForm.ShowDialog() == DialogResult.OK)
             {
-                keyboardLayout = configForm.NewLayout; // Get the new layout
-                Properties.Settings.Default.WindowOpacity = configForm.NewOpacity; // Set the new opacity
-                Opacity = Properties.Settings.Default.WindowOpacity;
+                appSettings.KeyboardLayout = configForm.NewLayout;
+                Opacity = appSettings.WindowOpacity = configForm.NewOpacity;
 
-                OnClosing(null, null);
-
+                AppSettings.SaveSettings(appSettings);
 
                 Controls.Clear(); // Clear existing controls
                 InitializeComponent(); // Reinitialize components

@@ -2,16 +2,21 @@
 
 class Globals
 {
-    public static readonly Font Ourfont = new Font("Consolas", 16);
+    public static int KeyboardKeyPad = 7;
+    public static int KeyboardKeyWidth = 38;
+    public static int KeyboardKeyHeight = 38; 
+
+
+    public static readonly Font Ourfont = new Font("Consolas", 18);
 
     public static readonly string QwertyKeyboardLayout = @"
 QWERTYUIOPÅ
-ASDFGHJKLÆØ'
-ZXCVBNM,.-";
+ ASDFGHJKLÆØ'
+  ZXCVBNM,.-";
 
     public static readonly string RollerCoasterKeyboardLayout = @"
-QDLP↵ MUOYJÅ
+QDLPB ↵MUOYJ
  SINAG CTHERV'
-\ZXWF⌫ KB,.";
+\ZXWK⌫ F*,.";
 
 }
